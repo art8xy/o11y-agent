@@ -1,0 +1,29 @@
+kubeApiServer:
+  enabled: true
+
+kubelet:
+  enabled: true
+
+kubeProxy:
+  enabled: true
+
+coreDns:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+kubeControllerManager:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+nodeExporter:
+  enabled: false
+
+windowsMonitoring:
+  enabled: false

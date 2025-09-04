@@ -1,0 +1,1472 @@
+{
+  "name": "loki",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}\n\n## Loki Datasource UID\n{{ $('Trigger').first().json.datasource_uid }}\n\n## List of Labels\n{{ $('Loki Labels').first().json.data.toJsonString() }}\n\n## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=## Overview\nYou are an Observability Agent embedded in an observability platform.  \nYour task is to create a list of LogQL queries that will help in incident investigation based on Alert JSON provided.\n\n## General Rules\n- You MUST follow the Plan of Actions in order.\n- Never contain questions or clarifications\n\n## Absolute Constraints\n- The \"List of Labels\" is the ONLY allowed label namespace.\n- Any label name not present in the \"List of Labels\" MUST NOT appear anywhere: not in queries, not in tool calls.\n- If a label is not in the \"List of Labels\", it does not exist.\n\n## Plan of Actions\n1. From the \"List of Labels\", select label names that are relevant to the Alert JSON.  \n   Ignore labels that do not meaningfully narrow the incident scope.\n2. For each selected label name get available values using list_loki_label_values tool.  \n3. Produce a list of raw LogQL queries that will help to investigate the incident.\n\n## Output Rules\n- Put each raw LogQL query into a separate list item.\n- Do not include descriptions or explanations.",
+          "maxIterations": 5
+        }
+      },
+      "id": "ae8f989c-d67b-4e9a-923d-cad26feb7792",
+      "name": "LogQL",
+      "position": [
+        -3136,
+        1040
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\"List of raw LogQL queries\"]"
+      },
+      "id": "c121fbb1-885f-4dd5-8dd3-b97d8aee49bf",
+      "name": "LogQL Output",
+      "position": [
+        -2912,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "ef2eb4c2-9fea-4aa5-95d8-bc3bcbaa5897",
+      "name": "LogQL Model",
+      "position": [
+        -3216,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://grafana-mcp.o11y.svc.cluster.local:8000/mcp",
+        "include": "selected",
+        "includeTools": [
+          "list_loki_label_values"
+        ],
+        "options": {}
+      },
+      "id": "f4266bd5-0969-4e2e-8844-5232b6d7cb40",
+      "name": "LogQL MCP",
+      "position": [
+        -3056,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "id": "846dd6b8-7b19-4be1-9682-7de683cc09c4",
+      "name": "Split LogQL",
+      "position": [
+        -2784,
+        1040
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "be053a88-92bd-4842-8c76-626ab3c58fef",
+      "name": "Loop Over LogQL",
+      "position": [
+        -2368,
+        1040
+      ],
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Trigger').first().json.base_url }}/loki/api/v1/query_range",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $('Loop Over LogQL').item.json.output.replace(/\\\\\"/g, '\"') }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $('Trigger').first().json.logs_limit }}"
+            },
+            {
+              "name": "start",
+              "value": "={{ $('Parameters').first().json.start }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Parameters').first().json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "91dd94e3-26f7-4db9-8cc8-0ee87e415332",
+      "name": "Loki Query Range",
+      "position": [
+        -2144,
+        1056
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Logs Data\n{{ $('Loki Query Range').item.json.data.result.toJsonString() }}\n\n## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=## Overview\nYou are an Observability Agent embedded in an observability platform.  \nYour task is to analyze a set of log entries and identify relevant to the alert logs.  \nYour goal is to help an engineer understand the incident and progress toward resolution by identifying only the logs that contribute to root-cause analysis.\n\n## Log Relevance Criterias\nA log entry is RELEVANT only if at least one of the following is true:\n- The log indicates a potential root cause of the incident.\n- The log provides a concrete hint toward resolving the incident.\n\nA log entry MUST be EXCLUDED if any of the following is true:\n- The log does not contribute to identifying the root cause.\n- The log describes secondary effects or symptoms caused by the incident rather than its cause.\n- The log is purely informational.\n- The log is a debug-level message.\n- The log indicates successful or expected behavior.\n\n## Deduplication Rules\nYou MUST deduplicate log entries.\n- If multiple logs are identical or nearly identical, include only one representative example.\n- Prefer the log entry that contains the most diagnostic context.\n\n## Output Format\n1. Write a short summary describing the relevant logs. Include whether those logs indicate potential root cause or just a hint.\n2. List only the deduplicated, relevant log entries. If log entry is not relevant do not include it."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "b8166057-6e17-47bb-aa2b-0aca4e340013",
+      "name": "Logs Analysis",
+      "position": [
+        -1680,
+        1040
+      ],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "0328c438-a570-41eb-a0d6-afb23f93a4f5",
+      "name": "Logs Analysis Model",
+      "position": [
+        -1680,
+        1248
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"summary\": \"The summary of findings\",\n  \"logs\": [\"The full log lines\"]\n}"
+      },
+      "id": "0ff0cf9b-d53f-435c-81aa-b876b4308ffa",
+      "name": "Logs Analysis Output",
+      "position": [
+        -1536,
+        1248
+      ],
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff0baaef-c532-45b9-b883-b58959259294",
+              "name": "execution_id",
+              "value": "={{ $execution.id }}",
+              "type": "number"
+            },
+            {
+              "id": "86f96fa2-44e6-47cd-9ae8-1bb55c74bf3a",
+              "name": "report",
+              "type": "object",
+              "value": "={}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ca605dc4-f644-44cb-aba7-12089f112494",
+      "name": "Exit Without Report",
+      "position": [
+        -1456,
+        464
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "output",
+        "options": {}
+      },
+      "id": "0e4373af-9a17-4a47-9e5b-e79be0262eb7",
+      "name": "Aggregate",
+      "position": [
+        -1680,
+        464
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "13bdbbe9-e1ba-440f-8215-f77c4e268f8d",
+              "leftValue": "={{ $('Loki Query Range').item.json.data.result }}",
+              "operator": {
+                "operation": "notEmpty",
+                "singleValue": true,
+                "type": "array"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "cd3fee52-dda6-40ce-85db-c8210fe16be5",
+      "name": "Result Not Empty",
+      "position": [
+        -1920,
+        1056
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d5b61cb6-a71c-40f2-b6a8-03f9c221141e",
+              "name": "execution_id",
+              "value": "={{ $execution.id }}",
+              "type": "number"
+            },
+            {
+              "id": "6aa5e5f5-344c-4730-abbf-2b1ff72b3840",
+              "name": "report",
+              "type": "object",
+              "value": "={{ $('Logs Analysis').item.json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fcfabdc3-502d-4c78-8b5a-f977794063f2",
+      "name": "Exit With Report",
+      "position": [
+        -144,
+        1008
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "6dc9608b-a7b7-4b83-8bdd-4728f983e647",
+              "leftValue": "={{ $('Analysis Evaluation').item.json.Helpfulness }}",
+              "operator": {
+                "operation": "gte",
+                "type": "number"
+              },
+              "rightValue": 4
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "9119fab5-9591-46d2-935b-dc605392e16e",
+      "name": "Helpful",
+      "position": [
+        -976,
+        1040
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "2caeccd6-9213-44c0-a26d-93d9ee7ab45b",
+      "name": "Evaluation Model",
+      "position": [
+        -1184,
+        1248
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "metric": "helpfulness",
+        "userQuery": "=## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "actualAnswer": "=## Summary\n{{ $('Logs Analysis').item.json.output.summary }}\n\n## Logs\n{{ $('Logs Analysis').item.json.output.logs?.length\n? `\\`\\`\\`\n$${$('Logs Analysis').item.json.output.logs.map(item => `$${item}`).join(\"\\n\")}\n\\`\\`\\``\n: \"No logs found.\"\n}}",
+        "prompt": "=## Overview\nYou are an Incident Investigation Judge with deep experience in production systems, observability, and SRE practices.\n\nYour task is to evaluate the quality, correctness, and investigative value of an incident findings produced by another AI Observability Agent.\n\nYou must judge the report strictly based on the content of the findings explicitly included in that report.\nDo not assume missing context, intent, or data.\n\nYour primary objective is to assess how effectively the findings help an engineer identify the root cause of the incident or meaningfully narrow the search space.\n\n## Scoring Criteria (1–5)\n5 - Excellent\n- Clearly identifies the most likely root cause.\n- All claims are directly supported by the included findings.\n- Demonstrates strong causal reasoning.\n- No speculation, filler, or unrelated information.\n\n4 – Strong\n- Narrows likely root cause to a small, well-justified set.\n- Identifies key failure signals and affected components.\n- Provides solid reasoning with minor gaps.\n\n3 – Partial\n- Findings provide a hint toward incident resolution rather than a potential root cause.\n- Finds some important signals but lacks prioritization or depth.\n- Analysis is mostly descriptive.\n\n2 – Weak\n- Mostly summary with minimal analysis.\n- Signals are mentioned without explaining impact or causality.\n\n1 – Poor\n- No meaningful analysis.\n- Speculative, misleading, or irrelevant.\n- Does not help an engineer move toward root cause.\n\n## Evaluation Principles\n- Judge only what is explicitly present in the report.\n- Do not assume missing data or intent.\n- Do not reward speculation, generic advice, or best-practice filler.\n- A report does not need a confirmed root cause to score highly — but it must clearly progress toward one.\n\n## What a Strong Investigation Report Does\n- Identifies specific signals (errors, retries, latency, saturation, failures).\n- Explains why the signals matter in the context of the incident.\n- Narrows possible causes instead of broadening them.\n- Avoids repeating raw data without interpretation.\n\n## What a Weak Investigation Report Does\n- Merely summarizes findings without analysis.\n- Lists many possible causes without prioritization or evidence.\n- Uses speculative language (“might be”, “could be”) without grounding.\n- Fails to explain how findings relate to the incident impact.\n- Introduces assumptions or data not present in the input.\n\n## Output Format\nProvide the final score as an integer (1, 2, 3, 4, or 5)  \nAlways follow the JSON format below and return nothing else:  \n{\n  \"score\": <number: integer from 1 to 5>\n}",
+        "options": {}
+      },
+      "id": "e3c124a0-02f4-48e2-8aa9-080d83cd54ac",
+      "name": "Analysis Evaluation",
+      "position": [
+        -1328,
+        1040
+      ],
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "945abe5d-3c7f-4465-9c4e-e244c9f7f0f8",
+      "name": "Get Memory",
+      "position": [
+        -5152,
+        1104
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "fdd64133-8468-4783-9c79-6c0af336174e",
+      "name": "Get Query",
+      "position": [
+        -5152,
+        896
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "insertMode": "override",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Loop Over LogQL').item.json.output }}",
+              "hideFromUI": true
+            }
+          ]
+        }
+      },
+      "id": "e7667fb4-76ad-4069-8b7d-aa73b655d264",
+      "name": "Insert Query",
+      "position": [
+        -496,
+        1088
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "64ee13d6-4ea7-4340-9f86-c1f739bf7450",
+      "name": "Insert Memory",
+      "position": [
+        -496,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "0aee1c7f-60f5-4cbc-899c-fe4ccd6629fe",
+              "leftValue": "={{ $('Get Query').item.json.messagesCount }}",
+              "operator": {
+                "operation": "notEquals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "af50b259-af74-42d7-892e-0fa017a1338c",
+      "name": "Memory Not Empty",
+      "position": [
+        -4560,
+        896
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "keys": {
+          "key": [
+            {
+              "currentKey": "messages[0].system",
+              "newKey": "query"
+            }
+          ]
+        },
+        "additionalOptions": {}
+      },
+      "id": "cfab9214-87de-4e2f-bdc3-b489ee06ad03",
+      "name": "Rename Keys",
+      "position": [
+        -4800,
+        896
+      ],
+      "type": "n8n-nodes-base.renameKeys",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "e12dbcd5-cecb-4ce9-af94-5902df98e0bf",
+      "name": "Delete Memory",
+      "position": [
+        -1680,
+        880
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "lastMessagesCount": 1
+      },
+      "id": "0c448845-de20-43eb-be89-124459927937",
+      "name": "Delete Query",
+      "position": [
+        -1680,
+        672
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "29681cec-95c1-47e1-8110-3a6e32efc435",
+              "leftValue": "={{ $('Get Query').last().json.messagesCount }}",
+              "operator": {
+                "operation": "equals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "10324a70-8c29-4c1d-a667-cc6970727c1f",
+      "name": "Without Memory",
+      "position": [
+        -1920,
+        656
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e04d9c25-88c6-4185-8d84-cd760ef3557b",
+              "leftValue": "={{ $('Get Query').last().json.messagesCount }}",
+              "operator": {
+                "operation": "notEquals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "18d35831-cf9e-4d51-8108-1935644d628a",
+      "name": "With Memory",
+      "position": [
+        -720,
+        1024
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "alert",
+              "type": "object"
+            },
+            {
+              "name": "base_url"
+            },
+            {
+              "name": "datasource_uid"
+            },
+            {
+              "name": "time_format"
+            },
+            {
+              "name": "time_plus",
+              "type": "number"
+            },
+            {
+              "name": "time_minus",
+              "type": "number"
+            },
+            {
+              "name": "logs_limit",
+              "type": "number"
+            },
+            {
+              "name": "logql_limit",
+              "type": "number"
+            },
+            {
+              "name": "bucket"
+            },
+            {
+              "name": "model"
+            },
+            {
+              "name": "temperature",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "13d279ad-5134-45de-87a3-a5ca658d34b4",
+      "name": "Trigger",
+      "position": [
+        -5792,
+        896
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "00ea6e9c-f5d7-494e-9eee-17239ebeff07",
+      "name": "Guardrail Model",
+      "position": [
+        -3856,
+        1248
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('Trigger').first().json.logql_limit }}"
+      },
+      "id": "a9efcb74-0a3e-469b-a493-885b22fe2d9c",
+      "name": "Limit LogQL",
+      "position": [
+        -2576,
+        1040
+      ],
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Trigger').first().json.base_url }}/loki/api/v1/labels",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "start",
+              "value": "={{ $('Parameters').first().json.start }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Parameters').first().json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0593cb99-eef4-4884-b0df-26ebfb1b386a",
+      "name": "Loki Labels",
+      "position": [
+        -5376,
+        896
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "bucketName": "={{ $('Trigger').item.json.bucket }}",
+        "fileKey": "={{ $('Trigger').item.json.alert.labels.alertname }}/loki.md"
+      },
+      "alwaysOutputData": false,
+      "id": "71c3d0b3-ab58-4341-b9cb-090946a5e660",
+      "name": "Download Context",
+      "position": [
+        -4336,
+        1072
+      ],
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "credentials": {
+        "s3": {
+          "id": "${minio_credentials.id}",
+          "name": "${minio_credentials.name}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "context",
+        "options": {}
+      },
+      "id": "7824bc33-a1b8-4b30-b6e5-5a995d58d34c",
+      "name": "Extract Context",
+      "position": [
+        -4080,
+        1056
+      ],
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Extract Context').item.json.context }}",
+        "guardrails": {
+          "jailbreak": {
+            "value": {
+              "threshold": 0.7
+            }
+          },
+          "pii": {
+            "value": {
+              "type": "all"
+            }
+          },
+          "secretKeys": {
+            "value": {
+              "permissiveness": "balanced"
+            }
+          },
+          "topicalAlignment": {
+            "value": {
+              "threshold": 0.7,
+              "prompt": "You are a content analysis system that determines if text stays on topic.\n\nBUSINESS SCOPE: Additional Context for Incident Investigation\n\nDetermine if the text stays within the defined business scope. Flag any content\nthat strays from the allowed topics."
+            }
+          }
+        }
+      },
+      "id": "9a7e9a13-d187-41af-9527-06de1f8557e6",
+      "name": "Context Guardrails",
+      "position": [
+        -3856,
+        1056
+      ],
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "afeb9c19-a6c1-4c76-9ceb-7b5f392810a7",
+              "name": "memory",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.labels.alertname }} (Loki)"
+            },
+            {
+              "id": "125c54f0-bb01-4e71-9f53-c9ee79862a83",
+              "name": "start",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.startsAt.toDateTime().minus($('Trigger').item.json.time_minus, $('Trigger').item.json.time_format) }}"
+            },
+            {
+              "id": "bc22fee6-e478-48be-9b8b-a92538bc9093",
+              "name": "end",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.startsAt.toDateTime().plus($('Trigger').item.json.time_plis, $('Trigger').item.json.time_format) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a235f0a-1175-4044-8bb9-a860d9a8b909",
+      "name": "Parameters",
+      "position": [
+        -5584,
+        896
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "deleteMode": "all"
+      },
+      "id": "50d39fd3-bb7a-4379-a275-da2f45f4eef5",
+      "name": "Empty Queries",
+      "position": [
+        -5152,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.alert_name }} (Loki)",
+        "contextWindowLength": 1
+      },
+      "id": "010ec78a-c867-400d-a3a6-3263b75f7d45",
+      "name": "Empty Memory",
+      "position": [
+        -5152,
+        1488
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "f8724289-bad5-41b2-befa-23abca6d6560",
+      "name": "When clicking ‘Execute workflow’",
+      "position": [
+        -5568,
+        1264
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c1c81fa-0a16-4647-9634-8d4ffa817598",
+              "name": "alert_name",
+              "type": "string",
+              "value": "Recommendation High Error Rate"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9a75aa11-f784-4617-b537-a57ae35f6164",
+      "name": "Set Alert Name",
+      "position": [
+        -5360,
+        1264
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "52fece7d-bd0e-44b3-85dc-6df887058b7d",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of LogQL queries\nCreate exactly 3 LogQL queries\n\n## Output List\nThe list MUST include queries, in the following order:\n1. Error-signal query. \n   - Must include |~ \"(?i)\" filter.  \n   - Regex should target error-like signals such as: error|exception|fail|panic|timeout|fatal|warn\n   - Should be scoped using the most relevant labels available.\n2. Context-specific keyword query. \n   - Must include |~ \"(?i)\" filter.  \n   - Regex should contain keywords derived from the alert context. Prioritize single word filters seperated with | regex.\n   - Avoid generic terms already used in the error-signal query.\n3. Broad catch-all query. \n   - No | filters of any kind.  \n   - Only label selectors.  \n   - MUST be the final item in the list."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ee421d97-b290-4d1c-8080-4111b35254c1",
+      "name": "Default Prompt",
+      "position": [
+        -3456,
+        1216
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "04ec5956-546e-4003-942a-7dc42d783062",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of LogQL queries\nCreate exactly {{ $('Trigger').first().json.logql_limit }} LogQL queries\n\n## Context\n{{ $('Extract Context').item.json.context }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d65f28c3-f7d7-4f4b-94ae-6cb64daa1f73",
+      "name": "Context Prompt",
+      "position": [
+        -3456,
+        1040
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "04ec5956-546e-4003-942a-7dc42d783062",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of LogQL queries\nCreate exactly 1 LogQL query\n\n## Instructions\nYou need to adapt following LogQL query to the current Alert JSON.\n{{ $('Rename Keys').first().json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1494182-38ee-4f3e-8a94-58d42e5a6573",
+      "name": "Memory Prompt",
+      "position": [
+        -3456,
+        880
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit Without Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Analysis Evaluation": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Helpful",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Context Guardrails": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Context Prompt",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Default Prompt",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Context Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Default Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Delete Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Delete Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Delete Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Download Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Extract Context",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Default Prompt",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Empty Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Empty Queries",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Evaluation Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Analysis Evaluation",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Extract Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Context Guardrails",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Get Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Rename Keys",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Guardrail Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Context Guardrails",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Helpful": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "With Memory",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Loop Over LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Insert Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Insert Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Insert Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit With Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Limit LogQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loop Over LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "LogQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "LogQL MCP": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "LogQL Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "LogQL Output": {
+      "ai_outputParser": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "ai_outputParser"
+          }
+        ]
+      ]
+    },
+    "Logs Analysis": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Analysis Evaluation",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Logs Analysis Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Logs Analysis",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Logs Analysis Output": {
+      "ai_outputParser": [
+        [
+          {
+            "index": 0,
+            "node": "Logs Analysis",
+            "type": "ai_outputParser"
+          }
+        ]
+      ]
+    },
+    "Loki Labels": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loki Query Range": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Result Not Empty",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loop Over LogQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Without Memory",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Loki Query Range",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Memory Not Empty": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Memory Prompt",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Download Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Memory Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parameters": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loki Labels",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Rename Keys": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Memory Not Empty",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Result Not Empty": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Logs Analysis",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Loop Over LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Set Alert Name": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Empty Queries",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split LogQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Limit LogQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parameters",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Set Alert Name",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "With Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit With Report",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Insert Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Without Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Aggregate",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Delete Query",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "a4e516db-8cee-4a77-9ec1-dd5da28c304e",
+  "meta": {
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "yoI81PyYos61EcWL",
+  "tags": []
+}

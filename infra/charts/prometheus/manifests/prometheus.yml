@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+spec:
+  version: v3.11.0
+  replicas: 1
+  retention: 7d
+  scrapeInterval: 15s
+  serviceName: prometheus
+  serviceAccountName: prometheus
+
+  enableRemoteWriteReceiver: true
+  enableOTLPReceiver: true
+
+  storage:
+    volumeClaimTemplate:
+      metadata:
+        name: prometheus-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector: {}
+
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector: {}
+  
+  probeNamespaceSelector: {}
+  probeSelector: {}
+   
+  ruleNamespaceSelector: {}
+  ruleSelector: {}
+  
+  scrapeConfigNamespaceSelector: {}
+  scrapeConfigSelector: {}

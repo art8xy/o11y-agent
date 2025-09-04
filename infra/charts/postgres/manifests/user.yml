@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${service}-postgres
+type: kubernetes.io/basic-auth
+stringData:
+  username: ${service}
+  password: ${service}123

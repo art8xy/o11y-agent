@@ -1,0 +1,29 @@
+assertNoLeakedSecrets: false
+
+adminUser: admin
+adminPassword: admin123
+
+service:
+  port: 3000
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+initChownData:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+
+grafana.ini:
+  server:
+    domain: grafana.o11y.local
+    root_url: https://grafana.o11y.local
+
+  database:
+    type: postgres
+    host: grafana-postgres-rw.o11y.svc.cluster.local:5432
+    name: grafana
+    user: grafana
+    password: grafana123

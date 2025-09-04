@@ -1,0 +1,8 @@
+serviceMonitor:
+  enabled: true
+
+alloy:  
+  configMap:
+    create: true
+    content: |
+      ${config}

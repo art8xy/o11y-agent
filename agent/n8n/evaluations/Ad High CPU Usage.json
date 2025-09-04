@@ -1,0 +1,5 @@
+{
+    "alert_name": "Ad High CPU Usage",
+    "alert_json": "<<placeholder>>",
+    "expected_root_cause": "The root cause of the incident is the enabled 'adManualGc' feature flag, which triggers manual garbage collection operations every 10 seconds. These operations are causing high CPU load, as evidenced by logs showing the 'High CPU-Load problempattern' being enabled."
+}

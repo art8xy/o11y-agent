@@ -1,0 +1,5 @@
+{
+    "alert_name": "Cart High Error Rate",
+    "alert_json": "<<placeholder>>",
+    "expected_root_cause": "The root cause of the incident is the cart service's inability to connect to Redis, as confirmed by the error message 'Can't access cart storage. System.ApplicationException: Wasn't able to connect to redis' in both traces and logs. This failure is occurring during the EmptyCart operation, leading to a high error rate."
+}

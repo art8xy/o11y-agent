@@ -1,0 +1,24 @@
+fullnameOverride: minio
+
+mode: standalone
+replicas: 1
+
+rootUser: root
+rootPassword: root1234
+
+users:
+- accessKey: admin
+  secretKey: admin123
+  policy: consoleAdmin
+
+resources:
+  requests:
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+metrics:
+  serviceMonitor:
+    enabled: true

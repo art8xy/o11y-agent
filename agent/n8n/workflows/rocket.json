@@ -1,0 +1,68 @@
+{
+  "name": "rocket",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "alerts/rocket",
+        "options": {}
+      },
+      "id": "8a3232d4-fe32-47d6-8e37-571f69112ba6",
+      "name": "Alert",
+      "position": [
+        -368,
+        -80
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "1643aac0-8204-40c5-9f30-c57ee1a6b2cd"
+    },
+    {
+      "parameters": {
+        "channel": "#Alerts",
+        "text": "={{ $json.body.status == 'resolved' ? '✅' : '🔥' }} **{{ $json.body.title }} {{ $json.body.commonLabels.alertname }}**\n{{ $json.body.commonAnnotations.description }}\n\n**Labels**\n{{ Object.entries($json.body.commonLabels).map(([k, v]) => `$${k}: $${v}`).join('\\n') }}",
+        "options": {
+          "alias": "Grafana",
+          "avatar": "https://logo.svgcdn.com/devicon/grafana-original.png"
+        },
+        "attachments": []
+      },
+      "id": "a79db2c5-5879-4b2f-af3a-901d058d380c",
+      "name": "Send Alert",
+      "position": [
+        -160,
+        -80
+      ],
+      "type": "n8n-nodes-base.rocketchat",
+      "typeVersion": 1,
+      "credentials": {
+        "rocketchatApi": {
+          "id": "${rocket_credentials.id}",
+          "name": "${rocket_credentials.name}"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Alert": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Alert",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "a31ce5aa-4dba-460f-9bd5-0683e15075ea",
+  "meta": {
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "FxhzKSZfGiXJJf2Z",
+  "tags": []
+}

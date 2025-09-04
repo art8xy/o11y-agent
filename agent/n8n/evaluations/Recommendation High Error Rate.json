@@ -1,0 +1,5 @@
+{
+    "alert_name": "Recommendation High Error Rate",
+    "alert_json": "<<placeholder>>",
+    "expected_root_cause": "The root cause of the incident is the 'product-catalog' service returning a 'Product Not Found' error when queried by the 'recommendation' service. This error is triggered by a gRPC call from the recommendation service to the product catalog service, resulting in a NOT_FOUND error and subsequent failure in the recommendation service's ListRecommendations endpoint."
+}

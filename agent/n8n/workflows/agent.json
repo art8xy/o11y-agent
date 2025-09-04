@@ -1,0 +1,1124 @@
+{
+  "name": "agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "alerts/agent",
+        "options": {}
+      },
+      "id": "7aac7d73-d2aa-44af-a692-1dacc36dee3a",
+      "name": "Alert",
+      "position": [
+        -640,
+        144
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "c31a4cee-118b-4037-9f37-84d16161a325"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "${loki_workflow.id}"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "alert"
+          ],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "alert",
+              "id": "alert",
+              "removed": false,
+              "required": false,
+              "type": "object"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "base_url",
+              "id": "base_url",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "datasource_uid",
+              "id": "datasource_uid",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_format",
+              "id": "time_format",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_plus",
+              "id": "time_plus",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_minus",
+              "id": "time_minus",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "logs_limit",
+              "id": "logs_limit",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "logql_limit",
+              "id": "logql_limit",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "bucket",
+              "id": "bucket",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "model",
+              "id": "model",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "temperature",
+              "id": "temperature",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            }
+          ],
+          "value": {
+            "alert": "={{ $('Parameters').item.json.alert }}",
+            "base_url": "http://loki.o11y.svc.cluster.local:3100",
+            "bucket": "={{ $('Parameters').item.json.bucket }}",
+            "datasource_uid": "loki",
+            "logql_limit": 3,
+            "logs_limit": 100,
+            "model": "={{ $('Parameters').item.json.model }}",
+            "temperature": "={{ $('Parameters').item.json.temperature }}",
+            "time_format": "={{ $('Parameters').item.json.time_format }}",
+            "time_minus": "={{ $('Parameters').item.json.time_minus }}",
+            "time_plus": "={{ $('Parameters').item.json.time_plus }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "e7b85a05-4289-43a7-b003-2b48f7e2b5c6",
+      "name": "Loki",
+      "position": [
+        -16,
+        48
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "${tempo_workflow.id}"
+        },
+        "workflowInputs": {
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": true,
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "body"
+          ],
+          "schema": [
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "alert",
+              "id": "alert",
+              "removed": false,
+              "required": false,
+              "type": "object"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "base_url",
+              "id": "base_url",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "datasource_uid",
+              "id": "datasource_uid",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_format",
+              "id": "time_format",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_plus",
+              "id": "time_plus",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "time_minus",
+              "id": "time_minus",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "traces_limit",
+              "id": "traces_limit",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "traceql_limit",
+              "id": "traceql_limit",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "bucket",
+              "id": "bucket",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "model",
+              "id": "model",
+              "removed": false,
+              "required": false,
+              "type": "string"
+            },
+            {
+              "canBeUsedToMatch": true,
+              "defaultMatch": false,
+              "display": true,
+              "displayName": "temperature",
+              "id": "temperature",
+              "removed": false,
+              "required": false,
+              "type": "number"
+            }
+          ],
+          "value": {
+            "alert": "={{ $('Parameters').item.json.alert }}",
+            "base_url": "http://tempo.o11y.svc.cluster.local:3200",
+            "bucket": "={{ $('Parameters').item.json.bucket }}",
+            "datasource_uid": "tempo",
+            "model": "={{ $('Parameters').item.json.model }}",
+            "temperature": "={{ $('Parameters').item.json.temperature }}",
+            "time_format": "={{ $('Parameters').item.json.time_format }}",
+            "time_minus": "={{ $('Parameters').item.json.time_minus }}",
+            "time_plus": "={{ $('Parameters').item.json.time_plus }}",
+            "traceql_limit": 3,
+            "traces_limit": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "279d8f3a-945b-4be9-8f90-deece45435a5",
+      "name": "Tempo",
+      "position": [
+        -16,
+        224
+      ],
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "e0ca35ef-54ea-42d8-9b63-ae9ac42ae3b3",
+      "name": "Merge",
+      "position": [
+        432,
+        144
+      ],
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0729faf4-a1e4-451f-94a7-549741292feb",
+              "name": "report",
+              "type": "string",
+              "value": "=#### Incident Summary\n{{ $('Reporter').item.json.output.summary }}\n\n#### Root Cause\n{{ $('Reporter').item.json.output.root_cause }}\n\n#### Actions\n{{ $('Reporter').item.json.output.actions?.length \n  ? `$${$json.output.actions.map(item => `- $${item}`).join(\"\\n\")}` \n  : \"- No actions identified.\" \n}}\n\n#### Evidence\n**Trace**  \n{{ $('Tempo Report').item.json.tempo.trace\n? `\\`\\`\\`\n$${$('Tempo Report').item.json.tempo.trace}\n\\`\\`\\``\n: \"No traces found.\"\n}}\n\n**Logs**\n{{ $('Loki Report').item.json.loki.logs?.length\n? `\\`\\`\\`\n$${$('Loki Report').item.json.loki.logs.map(item => `$${item}`).join(\"\\n\")}\n\\`\\`\\``\n: \"No logs found.\"\n}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d60fc1ad-3414-4bd9-9e8a-09480dc0fc75",
+      "name": "Prepare Report",
+      "position": [
+        1008,
+        144
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=#### Tempo Summary\n{{ $('Merge').item.json.tempo.summary\n  ? $('Merge').item.json.tempo.summary\n  : \"No summary\"\n}}\n\n#### Loki Summary\n{{ $('Merge').item.json.loki.summary\n  ? $('Merge').item.json.loki.summary\n  : \"No summary\"\n}}\n\n#### Evidence\n**Trace**\n{{ $('Tempo Report').item.json.tempo.trace\n? `\\`\\`\\`\n$${$('Tempo Report').item.json.tempo.trace}\n\\`\\`\\``\n: \"No traces found.\"\n}}\n\n**Logs**\n{{ $('Loki Report').item.json.loki.logs?.length\n? `\\`\\`\\`\n$${$('Loki Report').item.json.loki.logs.map(item => `$${item}`).join(\"\\n\")}\n\\`\\`\\``\n: \"No logs found.\"\n}}\n\n### Alert JSON\n{{ $('Parameters').item.json.alert.toJsonString() }}\n\n\n\n\n\n\n\n\n",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=## Overview\nYou are an Observability Agent embedded in an observability platform.  \nYour task is to analyze the findings provided by other Agents and form a diagnostic report.  \nYour goal is to help an engineer understand the incident and progress toward resolution by performing the root-cause analysis.\n\n## General Rules\n- Never contain questions or clarifications.\n- Do not speculate or infer beyond available findings.\n- Avoid vague or generic recommendations.\n- Summary and root cause statement MUST be backed by explicit evidence.\n\n## Tasks\n1. Form a reasoned hypothesis of the most likely root cause.\n2. Produce a human-readable, engineer-ready diagnostic report."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "792305e2-038c-4f06-bdcc-c8bf20e186d1",
+      "name": "Reporter",
+      "position": [
+        656,
+        144
+      ],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Parameters').item.json.model }}",
+        "options": {
+          "temperature": "={{ $('Parameters').item.json.temperature }}"
+        }
+      },
+      "id": "63fbc632-63bc-49fc-a7c6-71d35eb2dbf3",
+      "name": "Reporter Model",
+      "position": [
+        656,
+        320
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"summary\": \"Clear description of what happened and what was found.\",\n\t\"root_cause\": \"Professional assessment based on correlated data. Only provide causes supported by evidence and findings.\",\n    \"actions\": [\"Specific, actionable steps an engineer can take to remediate or investigate deeper.\"]\n}"
+      },
+      "id": "0126d1b7-6e42-4d3e-829c-d1d8de9fa372",
+      "name": "Reporter Output",
+      "position": [
+        800,
+        320
+      ],
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "channel": "#Alerts",
+        "text": "={{ $('Prepare Report').item.json.report }}",
+        "options": {
+          "alias": "o11y Agent",
+          "avatar": "https://assets.zilliz.com/AI_Agents_025b78a1b3.png"
+        },
+        "attachments": []
+      },
+      "id": "15739bfe-c3c6-4649-86c0-597103a6f85c",
+      "name": "Send Report",
+      "position": [
+        1440,
+        160
+      ],
+      "type": "n8n-nodes-base.rocketchat",
+      "typeVersion": 1,
+      "credentials": {
+        "rocketchatApi": {
+          "id": "${rocket_credentials.id}",
+          "name": "${rocket_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c794bb2-087f-4886-aab2-8b0338a92cc4",
+              "name": "alert",
+              "type": "object",
+              "value": "={{ $json.body.alerts[0] }}"
+            },
+            {
+              "id": "be43066c-a216-4ae3-934a-03f9501656b7",
+              "name": "time_format",
+              "type": "string",
+              "value": "minutes"
+            },
+            {
+              "id": "f65d41f3-f742-413c-a35c-a060440e1c9e",
+              "name": "time_plus",
+              "type": "number",
+              "value": 10
+            },
+            {
+              "id": "3a8ac817-8fb1-4c23-9511-233c9d5d5b13",
+              "name": "time_minus",
+              "type": "number",
+              "value": 30
+            },
+            {
+              "id": "28e0ff39-c5ac-49eb-a176-850e78556024",
+              "name": "model",
+              "type": "string",
+              "value": "devstral-latest"
+            },
+            {
+              "id": "8afd5c74-6655-47c5-8454-197263098a59",
+              "name": "temperature",
+              "type": "number",
+              "value": 0.1
+            },
+            {
+              "id": "10310f6e-6c77-47df-821a-723709589f5a",
+              "name": "bucket",
+              "type": "string",
+              "value": "context"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "06e1dff4-8bdb-4d6f-a77a-2ef1a6fa80f8",
+      "name": "Parameters",
+      "position": [
+        -256,
+        144
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f30726b1-8cf1-4fe8-a856-621def478cbb",
+              "name": "loki",
+              "type": "object",
+              "value": "={{ $json.report }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7716425c-5835-4397-9d3c-11d30df8de78",
+      "name": "Loki Report",
+      "position": [
+        208,
+        48
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7e27f1e8-d4e1-411d-971b-c9f5b9ed6c6f",
+              "name": "tempo",
+              "type": "object",
+              "value": "={{ $json.report }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4878813e-6e79-4f27-8e46-fef69dbddc81",
+      "name": "Tempo Report",
+      "position": [
+        208,
+        224
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "${evaluations_table.id}"
+        }
+      },
+      "type": "n8n-nodes-base.evaluationTrigger",
+      "typeVersion": 4.7,
+      "position": [
+        -640,
+        -16
+      ],
+      "id": "a08ea8dc-828f-4c0b-895d-9e50a29b6dbc",
+      "name": "Eval"
+    },
+    {
+      "parameters": {
+        "operation": "checkIfEvaluating"
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        1216,
+        144
+      ],
+      "id": "8ba8165c-e904-4534-9de9-0d2f465c674f",
+      "name": "Is Evaluation"
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "expectedAnswer": "={{ $('Eval').item.json.expected_root_cause }}",
+        "actualAnswer": "={{ $('Reporter').item.json.output.root_cause }}",
+        "prompt": "=# Root Cause Evaluation\n\nYou are an expert evaluator that scores how well an AI agent's identified root cause matches the actual (expected) root cause. You will be given two inputs:\n\n1. **Expected Root Cause** — The ground-truth root cause determined by a human expert.\n2. **Actual Root Cause** — The root cause returned by the AI agent being evaluated.\n\n## Scoring Rubric (1–5 Scale)\n### Score 5 — Exact or Near-Perfect Match\n- The actual root cause identifies the **same underlying issue** as the expected root cause.\n- Minor differences in wording, phrasing, or additional (but non-contradictory) detail are acceptable.\n\n### Score 4 — Substantially Correct with Minor Gaps\n- The actual root cause identifies the **correct general area** and gets the primary cause right, but misses a secondary detail, or includes a minor inaccuracy that doesn't change the overall diagnosis.\n- Minor differences in wording, phrasing, or additional (but non-contradictory) detail are acceptable.\n\n### Score 3 — Partially Correct\n- The actual root cause overlaps with the expected root cause but is **incomplete or diluted** with other incorrect or irrelevant causes.\n- It may identify a symptom rather than the true root cause, or identify the right subsystem but the wrong failure mode.\n\n### Score 2 — Mostly Incorrect\n- The actual root cause is **largely wrong** but contains a minor tangential connection to the real issue (e.g., mentions the right service but identifies a completely wrong failure).\n- Or the AI fabricates a plausible-sounding root cause that is not supported by the evidence.\n\n### Score 1 — Completely Incorrect\n- The actual root cause is **entirely wrong**, unrelated, or contradicts the expected root cause.\n- Also applies when the expected root cause is \"nothing was found\" / \"no root cause identifiable\" but the AI invents a root cause anyway — this is a **hallucination** and should be penalized heavily.\n\n## Special Cases\n- **Expected = \"Nothing was found\" / \"No root cause identifiable\"**: If the AI also concludes that no root cause can be determined, score **5**. If the AI fabricates or guesses a root cause, score **1** or **2** depending on how speculative vs. confidently wrong it is.\n- **Actual = \"Nothing was found\" / \"No root cause identifiable\"**: If the expected root cause is a real identifiable issue but the AI fails to find it, score **1** or **2**.\n- **Multiple root causes**: If the expected root cause lists multiple factors, evaluate whether the actual root cause captures all, some, or none of them, and score proportionally.\n\n## Evaluation Rules\n1. **Focus on semantic equivalence**, not lexical similarity. Different words describing the same root cause should score high.\n2. **Ignore extra context** in the actual root cause that is accurate and non-contradictory — it should not lower the score.\n3. **Penalize hallucinations** — confidently stated root causes that are fabricated or unsupported should score low.\n4. **Penalize vagueness** — if the actual root cause is so generic it could apply to anything (e.g., \"there is a configuration issue\"), score lower unless the expected root cause is equally vague.\n5. **Order of importance**: Correctness of the core root cause > completeness of details > wording/phrasing.",
+        "options": {
+          "metricName": "Correctness",
+          "inputPrompt": "Actual Root Cause: {actual_answer}\n\nExpected Root Cause: {expected_answer}"
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        1856,
+        -16
+      ],
+      "id": "01463876-dec6-4ad4-9a50-79486cb9e32a",
+      "name": "Evaluation"
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Parameters').item.json.model }}",
+        "options": {
+          "temperature": "={{ $('Parameters').item.json.temperature }}"
+        }
+      },
+      "id": "2407e89d-9ad7-4cbd-82c8-455bd6b0f8b2",
+      "name": "Evaluation AI",
+      "position": [
+        2000,
+        128
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "operation": "get",
+        "executionId": "={{ $('Loki').first().json.execution_id }}",
+        "options": {
+          "activeWorkflows": true
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        -112
+      ],
+      "id": "d082f02f-59ef-4289-b4b7-527ca43c861c",
+      "name": "Get Loki Execution",
+      "credentials": {
+        "n8nApi": {
+          "id": "${n8n_credentials.id}",
+          "name": "${n8n_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "execution",
+        "operation": "get",
+        "executionId": "={{ $('Tempo').first().json.execution_id }}",
+        "options": {
+          "activeWorkflows": true
+        },
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        80
+      ],
+      "id": "323e9cdb-d362-4aac-9dad-ef60efe3b51b",
+      "name": "Get Tempo Execution",
+      "credentials": {
+        "n8nApi": {
+          "id": "${n8n_credentials.id}",
+          "name": "${n8n_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet promptTokens = 0;\nlet completionTokens = 0;\nlet totalTokens = 0;\n\nfor (const item of items) {\n  const runData = item.json?.data?.resultData?.runData;\n  if (!runData) continue;\n\n  for (const [nodeName, executions] of Object.entries(runData)) {\n    if (!nodeName.includes(\"Model\")) continue;\n\n    for (const execution of executions) {\n      const lmData = execution?.data?.ai_languageModel;\n      if (!Array.isArray(lmData)) continue;\n\n      for (const group of lmData) {\n        if (!Array.isArray(group)) continue;\n\n        for (const output of group) {\n          const json = output?.json;\n          if (!json) continue;\n\n          const usage = json.tokenUsage ?? json.tokenUsageEstimate;\n          if (!usage) continue;\n\n          promptTokens += usage.promptTokens ?? 0;\n          completionTokens += usage.completionTokens ?? 0;\n          totalTokens += usage.totalTokens ?? 0;\n        }\n      }\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      loki: {\n        promptTokens: promptTokens,\n        completionTokens: completionTokens,\n        totalTokens: totalTokens,\n      },\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        -112
+      ],
+      "id": "291bc587-d6d1-4742-892f-760ba3935ef1",
+      "name": "Calculate Loki Tokens"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet promptTokens = 0;\nlet completionTokens = 0;\nlet totalTokens = 0;\n\nfor (const item of items) {\n  const runData = item.json?.data?.resultData?.runData;\n  if (!runData) continue;\n\n  for (const [nodeName, executions] of Object.entries(runData)) {\n    if (!nodeName.includes(\"Model\")) continue;\n\n    for (const execution of executions) {\n      const lmData = execution?.data?.ai_languageModel;\n      if (!Array.isArray(lmData)) continue;\n\n      for (const group of lmData) {\n        if (!Array.isArray(group)) continue;\n\n        for (const output of group) {\n          const json = output?.json;\n          if (!json) continue;\n\n          const usage = json.tokenUsage ?? json.tokenUsageEstimate;\n          if (!usage) continue;\n\n          promptTokens += usage.promptTokens ?? 0;\n          completionTokens += usage.completionTokens ?? 0;\n          totalTokens += usage.totalTokens ?? 0;\n        }\n      }\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      tempo: {\n        promptTokens: promptTokens,\n        completionTokens: completionTokens,\n        totalTokens: totalTokens,\n      },\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        80
+      ],
+      "id": "a649945f-a701-418b-a8ac-9b79a5fc98dc",
+      "name": "Calculate Tempo Tokens"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2656,
+        -16
+      ],
+      "id": "e50f917a-145e-4f20-be03-54bef8df228b",
+      "name": "Merge Tokens"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "772e033b-c664-47ad-9c15-df96c6d6d623",
+              "name": "body",
+              "value": "={{ $json.alert_json.parseJson()[0].body }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        -16
+      ],
+      "id": "11fd79d7-1b93-4e0f-adc4-60810d56abab",
+      "name": "Parse"
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "metric": "customMetrics",
+        "metrics": {
+          "assignments": [
+            {
+              "name": "loki_promptTokens",
+              "value": "={{ $json.loki.promptTokens }}",
+              "type": "number",
+              "id": "3033197f-1ae5-4b36-81e0-c079562dee33"
+            },
+            {
+              "id": "d8d80392-0892-4fb3-bcc6-db7f03b7a15f",
+              "name": "loki_completionTokens",
+              "value": "={{ $json.loki.completionTokens }}",
+              "type": "number"
+            },
+            {
+              "id": "364fe6b3-e598-4d58-8a52-fef0f19ed05b",
+              "name": "loki_totalTokens",
+              "value": "={{ $json.loki.totalTokens }}",
+              "type": "number"
+            },
+            {
+              "id": "3e299931-ecf9-4110-a536-2bc42e6f0b42",
+              "name": "tempo_promptTokens",
+              "value": "={{ $json.tempo.promptTokens }}",
+              "type": "number"
+            },
+            {
+              "id": "bd656cb6-e058-47ad-a6c5-de765e0e484b",
+              "name": "tempo_completionTokens",
+              "value": "={{ $json.tempo.completionTokens }}",
+              "type": "number"
+            },
+            {
+              "id": "6819cc8d-7f75-4707-b3dc-72c49770f01f",
+              "name": "tempo_totalTokens",
+              "value": "={{ $json.tempo.totalTokens }}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        2864,
+        -16
+      ],
+      "id": "32483042-a93f-418f-88e2-6033fd0eb145",
+      "name": "Tokens Metric"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "${evaluations_table.id}"
+        },
+        "outputs": {
+          "values": [
+            {
+              "outputName": "actual_root_cause",
+              "outputValue": "={{ $('Reporter').item.json.output.root_cause }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        1648,
+        -16
+      ],
+      "id": "72d9fe46-8051-4209-9bcb-5c86e21822f6",
+      "name": "Output"
+    },
+    {
+      "parameters": {
+        "operation": "setInputs",
+        "inputs": {
+          "values": [
+            {
+              "inputName": "expected_root_cause",
+              "inputValue": "={{ $('Eval').item.json.expected_root_cause }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8,
+      "position": [
+        1440,
+        -16
+      ],
+      "id": "1392e4ce-52f8-4985-916c-b127a9e075fe",
+      "name": "Input"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Alert": {
+      "main": [
+        [
+          {
+            "node": "Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loki": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loki Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loki Report": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Reporter",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parameters": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loki",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Tempo",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Prepare Report": {
+      "main": [
+        [
+          {
+            "node": "Is Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reporter": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Prepare Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Reporter Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Reporter",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Reporter Output": {
+      "ai_outputParser": [
+        [
+          {
+            "index": 0,
+            "node": "Reporter",
+            "type": "ai_outputParser"
+          }
+        ]
+      ]
+    },
+    "Tempo": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Tempo Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Tempo Report": {
+      "main": [
+        [
+          {
+            "index": 1,
+            "node": "Merge",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Eval": {
+      "main": [
+        [
+          {
+            "node": "Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Input",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluation AI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Evaluation",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Get Loki Execution",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Tempo Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Tempo Execution": {
+      "main": [
+        [
+          {
+            "node": "Calculate Tempo Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Loki Execution": {
+      "main": [
+        [
+          {
+            "node": "Calculate Loki Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Loki Tokens": {
+      "main": [
+        [
+          {
+            "node": "Merge Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Tempo Tokens": {
+      "main": [
+        [
+          {
+            "node": "Merge Tokens",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Tokens": {
+      "main": [
+        [
+          {
+            "node": "Tokens Metric",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse": {
+      "main": [
+        [
+          {
+            "node": "Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tokens Metric": {
+      "main": [
+        []
+      ]
+    },
+    "Output": {
+      "main": [
+        [
+          {
+            "node": "Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input": {
+      "main": [
+        [
+          {
+            "node": "Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "747f7b75-8dcd-4d7e-980b-d7a61ae5dfbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "iNGGPq6iUZhRzvkm",
+  "tags": []
+}

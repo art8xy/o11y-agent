@@ -1,0 +1,5 @@
+grafana:
+  url: http://grafana.o11y.svc.cluster.local:3000
+  apiKey: ${apiKey}
+
+extraArgs: ["--transport", "streamable-http"]

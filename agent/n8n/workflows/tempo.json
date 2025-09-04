@@ -1,0 +1,1631 @@
+{
+  "name": "tempo",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $('Trigger').item.json.base_url }}/api/v2/search/tags",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "start",
+              "value": "={{ $('Parameters').item.json.start }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Parameters').item.json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81f9791c-4f7f-4858-b2b6-5aa4cc514c7b",
+      "name": "Tempo Scopes",
+      "position": [
+        -6464,
+        896
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json;\nconst result = new Set();\n\nfor (const scope of input.scopes || []) {\n  const scopeName = scope.name;\n  for (const tag of scope.tags || []) {\n    if (scopeName === \"intrinsic\") {\n      result.add(tag);\n    } else {\n      result.add(`$${scopeName}.$${tag}`);\n    }\n  }\n}\n\nreturn [\n  {\n    json: {\n      tags: Array.from(result).sort()\n    }\n  }\n];"
+      },
+      "id": "4ed495c1-a589-46cd-b471-bc601ddf14d6",
+      "name": "Tempo Tags",
+      "position": [
+        -6224,
+        896
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "id": "e872323a-30ef-4dfe-98c8-67af1edb6f04",
+      "name": "Split TraceQL",
+      "position": [
+        -3680,
+        1056
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a35cc978-30eb-45f6-bc07-37f8a6729fbe",
+      "name": "Loop Over TraceQL",
+      "position": [
+        -3216,
+        1056
+      ],
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Trigger').first().json.base_url }}/api/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $('Split TraceQL').item.json.output.replace(/\\\\\"/g, '\"') }}"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $('Trigger').first().json.traces_limit }}"
+            },
+            {
+              "name": "start",
+              "value": "={{ $('Parameters').first().json.start }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Parameters').first().json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2fcadd14-4b56-4977-b41f-7fb54b8bbdde",
+      "name": "Tempo Search",
+      "position": [
+        -2992,
+        1072
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "traces",
+        "options": {}
+      },
+      "id": "2378c77a-24c0-4fec-9fad-4af974ae6b2b",
+      "name": "Split Traces",
+      "position": [
+        -2544,
+        1056
+      ],
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## Trace Data\n{{ $('Tempo Query').item.json.trace.toJsonString() }}\n\n## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=## Overview\nYou are an Observability Agent embedded in an observability platform.  \nYour task is to analyze a trace entries and identify relevant to the alert spans.  \nYour goal is to help an engineer understand the incident and progress toward resolution by identifying only the traces that contribute to root-cause analysis.\n\n## Trace Relevance Criteria\nA trace is RELEVANT only if at least one of the following is true:\n- The trace indicates a potential root cause of the incident.\n- The trace provides a concrete hint toward resolving the incident.\n\nA trace MUST be EXCLUDED if any of the following is true:\n- The trace does not contribute to identifying the root cause.\n- The trace describes secondary effects or symptoms caused by the incident rather than its cause.\n- Trace represents a fully successful request with no errors, retries, or abnormal latency.\n- Span only contains normal lifecycle or informational events.\n- Trace shows expected behavior with no degradation signals.\n\n## Output Format\n1. Write a short summary describing the relevant traces. Include whether those spans indicate potential root cause or just a hint.\n2. If the trace does not fall under \"Trace Relevance Criterias\", output summary as \"Not Relevant\"."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "207c2414-d7ed-4e5a-b7c0-8a0849d58f3a",
+      "name": "Traces Analysis",
+      "position": [
+        -1888,
+        1072
+      ],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"summary\": \"The summary of findings\"\n}"
+      },
+      "id": "f7fa92cf-753e-43da-ba79-7a7cd333995b",
+      "name": "Traces Analysis Output",
+      "position": [
+        -1744,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "34229991-7cf4-4a72-a727-919d3851ee20",
+      "name": "Traces Analysis Model",
+      "position": [
+        -1888,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f8856fb4-de11-4471-b125-545109834c02",
+      "name": "Loop Over Traces",
+      "position": [
+        -2336,
+        1056
+      ],
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Trigger').first().json.base_url }}/api/v2/traces/{{ $('Loop Over Traces').item.json.traceID }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "start",
+              "value": "={{ $('Parameters').first().json.start }}"
+            },
+            {
+              "name": "end",
+              "value": "={{ $('Parameters').first().json.end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a06db87b-ead1-4517-bbf3-b179f1fcc912",
+      "name": "Tempo Query",
+      "position": [
+        -2112,
+        1072
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "6e41bcf4-ce72-406f-8c8c-96510dadac9a",
+      "name": "Evaluation Model",
+      "position": [
+        -1168,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "metric": "helpfulness",
+        "userQuery": "=## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "actualAnswer": "=## Summary\n{{ $('Form Output').item.json.output.summary }}\n\n## Trace\n{{ $('Form Output').item.json.output.trace }}",
+        "prompt": "=## Overview\nYou are an Incident Investigation Judge with deep experience in production systems, observability, and SRE practices.\n\nYour task is to evaluate the quality, correctness, and investigative value of an incident findings produced by another AI Observability Agent.\n\nYou must judge the report strictly based on the content of the findings explicitly included in that report.\nDo not assume missing context, intent, or data.\n\nYour primary objective is to assess how effectively the findings help an engineer identify the root cause of the incident or meaningfully narrow the search space.\n\n## Scoring Criteria (1–5)\n5 - Excellent\n- Clearly identifies the most likely root cause.\n- All claims are directly supported by the included findings.\n- Demonstrates strong causal reasoning.\n- No speculation, filler, or unrelated information.\n\n4 – Strong\n- Narrows likely root cause to a small, well-justified set.\n- Identifies key failure signals and affected components.\n- Provides solid reasoning with minor gaps.\n\n3 – Partial\n- Findings provide a hint toward incident resolution rather than a potential root cause.\n- Finds some important signals but lacks prioritization or depth.\n- Analysis is mostly descriptive.\n\n2 – Weak\n- Mostly summary with minimal analysis.\n- Signals are mentioned without explaining impact or causality.\n\n1 – Poor\n- No meaningful analysis.\n- Speculative, misleading, or irrelevant.\n- Does not help an engineer move toward root cause.\n\n## Evaluation Principles\n- Judge only what is explicitly present in the report.\n- Do not assume missing data or intent.\n- Do not reward speculation, generic advice, or best-practice filler.\n- A report does not need a confirmed root cause to score highly — but it must clearly progress toward one.\n\n## What a Strong Investigation Report Does\n- Identifies specific signals (errors, retries, latency, saturation, failures).\n- Explains why the signals matter in the context of the incident.\n- Narrows possible causes instead of broadening them.\n- Avoids repeating raw data without interpretation.\n\n## What a Weak Investigation Report Does\n- Merely summarizes findings without analysis.\n- Lists many possible causes without prioritization or evidence.\n- Uses speculative language (“might be”, “could be”) without grounding.\n- Fails to explain how findings relate to the incident impact.\n- Introduces assumptions or data not present in the input.\n\n## Output Format\nProvide the final score as an integer (1, 2, 3, 4, or 5)  \nAlways follow the JSON format below and return nothing else:  \n{\n  \"score\": <number: integer from 1 to 5>\n}",
+        "options": {}
+      },
+      "id": "e9719e8a-fbfc-44e0-84ba-427b663c46a7",
+      "name": "Analysis Evaluation",
+      "position": [
+        -1312,
+        1072
+      ],
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.8
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "6dc9608b-a7b7-4b83-8bdd-4728f983e647",
+              "leftValue": "={{ $('Analysis Evaluation').item.json.Helpfulness }}",
+              "operator": {
+                "operation": "gte",
+                "type": "number"
+              },
+              "rightValue": 4
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "c9d21bf1-e9b4-46de-ab3d-18259b8da3c8",
+      "name": "Helpful",
+      "position": [
+        -960,
+        1072
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "52b6fa93-4213-4f29-a30b-e71170f37906",
+              "leftValue": "={{ $('Tempo Search').item.json.traces }}",
+              "operator": {
+                "operation": "notEmpty",
+                "singleValue": true,
+                "type": "array"
+              },
+              "rightValue": ""
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "dbf0fee8-2c15-4a48-ab97-1a09d350a3e0",
+      "name": "Result Not Empty",
+      "position": [
+        -2768,
+        1072
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67273e9e-864d-412c-a482-fd55b227abd0",
+              "name": "output.summary",
+              "type": "string",
+              "value": "={{ $('Traces Analysis').item.json.output.summary }}"
+            },
+            {
+              "id": "b99293f6-1b73-4a40-8602-643a12e66f3a",
+              "name": "output.trace",
+              "type": "string",
+              "value": "={{ $('Loop Over Traces').item.json.traceID }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "59122058-0d2a-4992-a55b-554a52f97876",
+      "name": "Form Output",
+      "position": [
+        -1536,
+        1072
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "alert",
+              "type": "object"
+            },
+            {
+              "name": "base_url"
+            },
+            {
+              "name": "datasource_uid"
+            },
+            {
+              "name": "time_format"
+            },
+            {
+              "name": "time_plus",
+              "type": "number"
+            },
+            {
+              "name": "time_minus",
+              "type": "number"
+            },
+            {
+              "name": "traces_limit",
+              "type": "number"
+            },
+            {
+              "name": "traceql_limit",
+              "type": "number"
+            },
+            {
+              "name": "bucket"
+            },
+            {
+              "name": "model"
+            },
+            {
+              "name": "temperature",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "dd303be3-a3df-4905-8bb1-94eaa84b7cd5",
+      "name": "Trigger",
+      "position": [
+        -6928,
+        896
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d243a072-74a0-4db2-ba30-a073615b1136",
+              "name": "memory",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.labels.alertname }} (Tempo)"
+            },
+            {
+              "id": "125c54f0-bb01-4e71-9f53-c9ee79862a83",
+              "name": "start",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.startsAt.toDateTime().minus($('Trigger').item.json.time_minus, $('Trigger').item.json.time_format).toSeconds() }}"
+            },
+            {
+              "id": "bc22fee6-e478-48be-9b8b-a92538bc9093",
+              "name": "end",
+              "type": "string",
+              "value": "={{ $('Trigger').item.json.alert.startsAt.toDateTime().plus($('Trigger').item.json.time_plus, $('Trigger').item.json.time_format).toSeconds() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a16a95e-fbc8-404f-9056-fb096d3ce69c",
+      "name": "Parameters",
+      "position": [
+        -6704,
+        896
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "f64f1642-b3e0-45c8-a82f-119214999ad6",
+      "name": "Get Memory",
+      "position": [
+        -6000,
+        1088
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "20ef53be-412f-4aa2-bc30-68e7894f0416",
+      "name": "Get Query",
+      "position": [
+        -6000,
+        896
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "keys": {
+          "key": [
+            {
+              "currentKey": "messages[0].system",
+              "newKey": "query"
+            }
+          ]
+        },
+        "additionalOptions": {}
+      },
+      "id": "ad53fbc8-b1a9-454e-bae8-34df5fe3a4d2",
+      "name": "Rename Keys",
+      "position": [
+        -5648,
+        896
+      ],
+      "type": "n8n-nodes-base.renameKeys",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "deleteMode": "all"
+      },
+      "id": "e2645d56-3067-4841-bc84-1353dd166cd8",
+      "name": "Empty Queries",
+      "position": [
+        -6000,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.alert_name }} (Tempo)",
+        "contextWindowLength": 1
+      },
+      "id": "e5c9d613-4abb-4de5-8146-1d85c5932ee6",
+      "name": "Empty Memory",
+      "position": [
+        -6000,
+        1472
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "847ae27d-3bd1-43e1-b501-1d6e216c07f7",
+      "name": "When clicking ‘Execute workflow’",
+      "position": [
+        -6464,
+        1264
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c1c81fa-0a16-4647-9634-8d4ffa817598",
+              "name": "alert_name",
+              "type": "string",
+              "value": "Recommendation High Error Rate"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ec7b8628-93c6-42f0-95be-08676b6981ea",
+      "name": "Set Alert Name",
+      "position": [
+        -6224,
+        1264
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "d51d959c-0c35-478f-97cc-f6d8d9216222",
+      "name": "Guardrail Model",
+      "position": [
+        -4704,
+        1264
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "bucketName": "={{ $('Trigger').item.json.bucket }}",
+        "fileKey": "={{ $('Trigger').item.json.alert.labels.alertname }}/tempo.md"
+      },
+      "alwaysOutputData": false,
+      "id": "7424bb13-162e-491c-9818-69c3088efe75",
+      "name": "Download Context",
+      "position": [
+        -5184,
+        1088
+      ],
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "credentials": {
+        "s3": {
+          "id": "${minio_credentials.id}",
+          "name": "${minio_credentials.name}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "context",
+        "options": {}
+      },
+      "id": "febf34d1-a723-440b-8ef8-7aff05c2f836",
+      "name": "Extract Context",
+      "position": [
+        -4928,
+        1072
+      ],
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "text": "={{ $('Extract Context').item.json.context }}",
+        "guardrails": {
+          "jailbreak": {
+            "value": {
+              "threshold": 0.7
+            }
+          },
+          "pii": {
+            "value": {
+              "type": "all"
+            }
+          },
+          "secretKeys": {
+            "value": {
+              "permissiveness": "balanced"
+            }
+          },
+          "topicalAlignment": {
+            "value": {
+              "threshold": 0.7,
+              "prompt": "You are a content analysis system that determines if text stays on topic.\n\nBUSINESS SCOPE: Additional Context for Incident Investigation\n\nDetermine if the text stays within the defined business scope. Flag any content\nthat strays from the allowed topics."
+            }
+          }
+        }
+      },
+      "id": "f67b6844-f92b-4e5d-b3cb-879d3706e17f",
+      "name": "Context Guardrails",
+      "position": [
+        -4704,
+        1072
+      ],
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}\n\n## Tempo Datasource UID\n{{ $('Trigger').first().json.datasource_uid }}\n\n## List of Tags\n{{ $('Tempo Tags').first().json.tags.toJsonString() }}\n\n## Alert JSON\n{{ $('Trigger').first().json.alert.toJsonString() }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=## Overview\nYou are an Observability Agent embedded in an observability platform.  \nYour task is to create a list of TraceQL queries that will help in incident investigation based on Alert JSON provided.\n\n## General Rules\n- You MUST follow the Plan of Actions in order.\n- Never contain questions or clarifications.\n- Use small, yet specific queries.\n\n## Absolute Constraints\n- The \"List of Tags\" is the ONLY allowed tags namespace.\n- Any tag name not present in the \"List of Tags\" MUST NOT appear anywhere: not in queries, not in tool calls.\n- Tag names MUST match exactly (string-equal) one entry from the \"List of Tags\".\n- If a tag is not in the \"List of Tags\", it does not exist.\n\n## Tags Usage Definition\n- Intrinsic TraceQL fields (e.g. span.name, span.kind, trace.name)  \n  MUST NOT be used unless their exact name appears in the \"List of Tags\".\n- Aliases, normalized forms, or semantic equivalents are NOT allowed.\n\n## Plan of Actions\n1. Always use tempo_docs-traceql with all three topics \"query\", \"basic\", \"structural\" topic names to get TraceQL examples.\n1. From the \"List of Tags\", select tag names that are relevant to the Alert JSON.  \n   Ignore tags that do not meaningfully narrow the incident scope.\n2. For each selected tag name get available values using tempo_get-attribute-values tool.  \n   Do not search for values for tag \"duration\".\n3. Produce a list of raw TraceQL queries that will help to investigate the incident.\n\n## Output Rules\n- Put each raw TraceQL query into a separate list item.\n- Do not include descriptions or explanations.",
+          "maxIterations": 5
+        }
+      },
+      "id": "82bf2af6-6f40-4d2e-9a7e-e4a4b8292a49",
+      "name": "TraceQL",
+      "position": [
+        -4032,
+        1056
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Trigger').first().json.model }}",
+        "options": {
+          "temperature": "={{ $('Trigger').first().json.temperature }}"
+        }
+      },
+      "id": "7b5a8619-4282-4443-96ab-d1e78eb60d3e",
+      "name": "TraceQL Model",
+      "position": [
+        -4128,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "${mistral_credentials.id}",
+          "name": "${mistral_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://grafana-mcp.o11y.svc.cluster.local:8000/mcp",
+        "include": "selected",
+        "includeTools": [
+          "tempo_docs-traceql",
+          "tempo_get-attribute-values"
+        ],
+        "options": {}
+      },
+      "id": "e5e72554-b8b2-4fb5-80b5-5f3f34a5f509",
+      "name": "TraceQL MCP",
+      "position": [
+        -3968,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\"List of raw TraceQL queries\"]"
+      },
+      "id": "1edc637f-c621-4661-914c-388073e1e357",
+      "name": "TraceQL Output",
+      "position": [
+        -3808,
+        1280
+      ],
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('Trigger').first().json.traceql_limit }}"
+      },
+      "id": "fd11c0c2-483f-4de6-b52e-8255dd61ad2a",
+      "name": "Limit TraceQL",
+      "position": [
+        -3456,
+        1056
+      ],
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "insertMode": "override",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "={{ $('Loop Over TraceQL').item.json.output }}",
+              "hideFromUI": true
+            }
+          ]
+        }
+      },
+      "id": "bffa922a-1c50-44c9-ae5f-307028d2e21b",
+      "name": "Insert Query",
+      "position": [
+        -480,
+        1120
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "a597537e-49ba-469d-b75b-501d3cb590c4",
+      "name": "Insert Memory",
+      "position": [
+        -480,
+        1312
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "e04d9c25-88c6-4185-8d84-cd760ef3557b",
+              "leftValue": "={{ $('Get Query').first().json.messagesCount }}",
+              "operator": {
+                "operation": "notEquals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "6cd8f835-1bd1-4a1f-8a3e-fedcc64faf1d",
+      "name": "With Memory",
+      "position": [
+        -704,
+        1056
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "397038cc-893d-4f72-9247-de5e9fed9f92",
+              "name": "execution_id",
+              "value": "={{ $execution.id }}",
+              "type": "number"
+            },
+            {
+              "id": "6aa5e5f5-344c-4730-abbf-2b1ff72b3840",
+              "name": "report",
+              "type": "object",
+              "value": "={{ $('Form Output').item.json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "652d84d0-2199-4bc2-8afa-8972d22bc0d4",
+      "name": "Exit With Report",
+      "position": [
+        -128,
+        1040
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8c680f0c-ab05-43ce-8bd9-72b278e4b52f",
+              "name": "execution_id",
+              "value": "={{ $execution.id }}",
+              "type": "number"
+            },
+            {
+              "id": "86f96fa2-44e6-47cd-9ae8-1bb55c74bf3a",
+              "name": "report",
+              "type": "object",
+              "value": "={}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce6ab648-9610-40ff-b2a8-416937cc8c9d",
+      "name": "Exit Without Report",
+      "position": [
+        -2320,
+        464
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "output",
+        "options": {}
+      },
+      "id": "b2c58f2a-e4a1-4c16-bd84-870cdd51a4d4",
+      "name": "Aggregate",
+      "position": [
+        -2544,
+        464
+      ],
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Parameters').first().json.memory }}",
+        "contextWindowLength": 1
+      },
+      "id": "3773d78c-ea90-4619-aac0-86cbb224764a",
+      "name": "Delete Memory",
+      "position": [
+        -2544,
+        880
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "credentials": {
+        "redis": {
+          "id": "${valkey_credentials.id}",
+          "name": "${valkey_credentials.name}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "delete",
+        "lastMessagesCount": 1
+      },
+      "id": "6a281144-9cff-40dd-8204-ef70425bdf63",
+      "name": "Delete Query",
+      "position": [
+        -2544,
+        672
+      ],
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "29681cec-95c1-47e1-8110-3a6e32efc435",
+              "leftValue": "={{ $('Get Query').first().json.messagesCount }}",
+              "operator": {
+                "operation": "equals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "2aca73df-2ede-48c9-8b96-68f747f41d26",
+      "name": "Without Memory",
+      "position": [
+        -2768,
+        656
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "0aee1c7f-60f5-4cbc-899c-fe4ccd6629fe",
+              "leftValue": "={{ $('Get Query').item.json.messagesCount }}",
+              "operator": {
+                "operation": "notEquals",
+                "type": "number"
+              },
+              "rightValue": 0
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          }
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "3ae9b18b-88a8-418e-8002-118122a166c0",
+      "name": "Memory Not Empty",
+      "position": [
+        -5424,
+        896
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "04ec5956-546e-4003-942a-7dc42d783062",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of TraceQL queries\nCreate exactly 1 TraceQL query\n\n## Instructions\nYou need to adapt following TraceQL query to the current Alert JSON.\n{{ $('Rename Keys').first().json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb3e6bc1-057d-4ff8-a233-63525d9dbcad",
+      "name": "Memory Prompt",
+      "position": [
+        -4336,
+        880
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "52fece7d-bd0e-44b3-85dc-6df887058b7d",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of TraceQL queries\nCreate exactly 2 TraceQL queries\n\n## Output List\nThe list MUST include queries, in the following order:\n1. Error-signal query.  \n   - Target error-like signals such as: error|exception|fail|panic|timeout|fatal|warn\n   - Should be scoped using the most relevant tags available.\n2. Long duration operations query.\n   - Must search for long duration operations. (eg. > 10s)\n   - Should be scoped using the most relevant tags available.\n   - MUST be the final item in the list."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2ba2dc13-eaeb-41c4-b000-43bcb999e1ba",
+      "name": "Default Prompt",
+      "position": [
+        -4336,
+        1232
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "04ec5956-546e-4003-942a-7dc42d783062",
+              "name": "prompt",
+              "type": "string",
+              "value": "=## Number of TraceQL queries\nCreate exactly {{ $('Trigger').first().json.traceql_limit }} TraceQL queries\n\n## Context\n{{ $('Extract Context').item.json.context }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3fbe5f86-9376-488c-84c6-87c41142a08e",
+      "name": "Context Prompt",
+      "position": [
+        -4336,
+        1056
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit Without Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Analysis Evaluation": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Helpful",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Context Guardrails": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Context Prompt",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Default Prompt",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Context Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Default Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Delete Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Delete Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Delete Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Download Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Extract Context",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Default Prompt",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Empty Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Empty Queries",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Evaluation Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Analysis Evaluation",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Extract Context": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Context Guardrails",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Form Output": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Analysis Evaluation",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Get Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Get Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Rename Keys",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Guardrail Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Context Guardrails",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Helpful": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "With Memory",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Loop Over Traces",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Insert Memory": {
+      "ai_memory": [
+        [
+          {
+            "index": 0,
+            "node": "Insert Query",
+            "type": "ai_memory"
+          }
+        ]
+      ]
+    },
+    "Insert Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit With Report",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Limit TraceQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loop Over TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loop Over TraceQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Without Memory",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Tempo Search",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Loop Over Traces": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loop Over TraceQL",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Tempo Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Memory Not Empty": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Memory Prompt",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Download Context",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Memory Prompt": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Parameters": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Tempo Scopes",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Rename Keys": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Memory Not Empty",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Result Not Empty": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split Traces",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Loop Over TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Set Alert Name": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Empty Queries",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split TraceQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Limit TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Split Traces": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Loop Over Traces",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Tempo Query": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Traces Analysis",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Tempo Scopes": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Tempo Tags",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Tempo Search": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Result Not Empty",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Tempo Tags": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Get Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "TraceQL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Split TraceQL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "TraceQL MCP": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "TraceQL Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "TraceQL Output": {
+      "ai_outputParser": [
+        [
+          {
+            "index": 0,
+            "node": "TraceQL",
+            "type": "ai_outputParser"
+          }
+        ]
+      ]
+    },
+    "Traces Analysis": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Form Output",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Traces Analysis Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Traces Analysis",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Traces Analysis Output": {
+      "ai_outputParser": [
+        [
+          {
+            "index": 0,
+            "node": "Traces Analysis",
+            "type": "ai_outputParser"
+          }
+        ]
+      ]
+    },
+    "Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parameters",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Set Alert Name",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "With Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Exit With Report",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Insert Query",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Without Memory": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Aggregate",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Delete Query",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "a48af30d-fb5b-4db1-87d2-c8a3c7ca4f03",
+  "meta": {
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "1bzkhK8FERPadF5C",
+  "tags": []
+}

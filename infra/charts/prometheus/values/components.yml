@@ -1,0 +1,22 @@
+fullnameOverride: prometheus
+
+grafana:
+  enabled: false
+
+alertmanager:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+prometheus-windows-exporter:
+  fullnameOverride: windows-exporter
+
+prometheus-node-exporter:
+  fullnameOverride: node-exporter
+
+kube-state-metrics:
+  fullnameOverride: kube-state-metrics
+
+prometheusOperator:
+  fullnameOverride: prometheus-operator

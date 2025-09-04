@@ -1,0 +1,11 @@
+fullnameOverride: metrics-server
+
+args: [--kubelet-insecure-tls]
+apiService:
+  insecureSkipTLSVerify: true
+
+metrics:
+  enabled: true
+
+serviceMonitor:
+  enabled: true

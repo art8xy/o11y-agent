@@ -1,0 +1,9 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: ${service}
+spec:
+  name: ${service}
+  owner: ${service}
+  cluster:
+    name: ${service}-postgres

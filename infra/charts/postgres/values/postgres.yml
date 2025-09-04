@@ -1,0 +1,14 @@
+fullnameOverride: ${service}-postgres
+
+cluster:
+  instances: 1
+  storage:
+    size: 5Gi
+
+  roles:
+  - name: ${service}
+    comment: ${service} role
+    ensure: present
+    login: true
+    passwordSecret: 
+      name: ${service}-postgres

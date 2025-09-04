@@ -1,0 +1,25 @@
+fullnameOverride: tempo
+
+serviceMonitor:
+  enabled: true
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+tempo:
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: http://prometheus.o11y.svc.cluster.local:9090/api/v1/write
+  
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+          - local-blocks
+
+  queryFrontend:
+    mcp_server:
+      enabled: true

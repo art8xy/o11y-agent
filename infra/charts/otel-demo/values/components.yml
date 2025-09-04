@@ -1,0 +1,189 @@
+jaeger:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
+
+opensearch:
+  enabled: false
+
+components:
+  accounting:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 120Mi
+      limits:
+        cpu: 500m
+        memory: 120Mi
+  ad:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 300Mi
+      limits:
+        cpu: 5000m
+        memory: 300Mi
+  cart:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 160Mi
+      limits:
+        cpu: 100m
+        memory: 160Mi
+  checkout:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+      limits:
+        cpu: 100m
+        memory: 20Mi
+  currency:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+      limits:
+        cpu: 100m
+        memory: 20Mi
+  email:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+  flagd:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 75Mi
+      limits:
+        cpu: 100m
+        memory: 75Mi
+  fraud-detection:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 300Mi
+      limits:
+        cpu: 200m
+        memory: 300Mi
+  frontend:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 250Mi
+      limits:
+        cpu: 100m
+        memory: 250Mi 
+  frontend-proxy:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 65Mi
+      limits:
+        cpu: 100m
+        memory: 65Mi
+  image-provider:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 50Mi
+  kafka:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 700Mi
+      limits:
+        cpu: 2000m
+        memory: 700Mi
+  llm:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 200Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+  load-generator:
+    resources:
+      requests:
+        cpu: 2000m
+        memory: 1500Mi
+      limits:
+        cpu: 2000m
+        memory: 1500Mi
+  payment:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 140Mi
+      limits:
+        cpu: 100m
+        memory: 140Mi
+  postgresql:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+  product-catalog:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+      limits:
+        cpu: 100m
+        memory: 20Mi
+  product-reviews:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+  quote:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 40Mi
+      limits:
+        cpu: 100m
+        memory: 40Mi
+  recommendation:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 500Mi
+      limits:
+        cpu: 100m
+        memory: 500Mi
+  shipping:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+      limits:
+        cpu: 100m
+        memory: 20Mi
+  valkey-cart:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 20Mi
+      limits:
+        cpu: 100m
+        memory: 20Mi

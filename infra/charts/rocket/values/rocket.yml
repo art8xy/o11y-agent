@@ -1,0 +1,38 @@
+microservices:
+  enabled: false
+
+nats:
+  enabled: false
+
+prometheusScraping:
+  enabled: true
+
+serviceMonitor:
+  enabled: true
+
+podMonitor:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+mongodb:
+  image:
+    tag: 8.0.13
+  
+  auth:
+    rootPassword: root123
+    databases:
+      - rocket
+    usernames:
+      - rocket
+    passwords:
+      - rocket123
+  
+  persistence:
+    enabled: true
+    size: 5Gi
+  
+  serviceMonitor:
+    enabled: true

@@ -1,0 +1,43 @@
+providers:
+  kubernetesCRD:
+    enabled: false
+  kubernetesIngress:
+    enabled: false
+  kubernetesGateway:
+    enabled: true
+    namespaces: []
+
+ingressClass:
+  enabled: false
+gatewayClass:
+  enabled: true
+
+service:
+  type: LoadBalancer
+  spec:
+    loadBalancerIP: ${ip}
+
+gateway:
+  enabled: true
+  listeners:
+    web:
+      port: 8000
+      hostname: "*.o11y.local"
+      protocol: HTTP
+      namespacePolicy:
+        from: All
+    websecure:
+      port: 8443
+      hostname: "*.o11y.local"
+      protocol: HTTPS
+      namespacePolicy:
+        from: All
+      mode: Terminate
+      certificateRefs:
+        - name: o11y-tls
+          namespace: kube-system
+
+metrics:
+  prometheus:
+    serviceMonitor:
+      enabled: true

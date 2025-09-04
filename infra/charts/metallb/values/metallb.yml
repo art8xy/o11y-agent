@@ -1,0 +1,8 @@
+speaker:
+  ignoreExcludeLB: true
+
+prometheus:
+  namespace: o11y
+  serviceAccount: prometheus
+  serviceMonitor:
+    enabled: true

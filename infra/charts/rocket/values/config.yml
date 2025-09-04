@@ -1,0 +1,31 @@
+extraEnv:
+  - name: INITIAL_USER
+    value: "yes"
+  - name: ADMIN_NAME
+    value: admin
+  - name: ADMIN_USERNAME
+    value: admin
+  - name: ADMIN_PASS
+    value: admin123
+  - name: ADMIN_EMAIL
+    value: admin@localhost
+  - name: ROOT_URL
+    value: https://rocket.k8s.local
+  - name: OVERWRITE_SETTING_Organization_Type
+    value: Nonprofit
+  - name: OVERWRITE_SETTING_Organization_Name
+    value: o11y-agent
+  - name: OVERWRITE_SETTING_Industry
+    value: Other
+  - name: OVERWRITE_SETTING_Size
+    value: 1-10 people
+  - name: OVERWRITE_SETTING_Country
+    value: Worldwide
+  - name: OVERWRITE_SETTING_Allow_Marketing_Emails
+    value: "no"
+  - name: OVERWRITE_SETTING_Organization_Email
+    value: organization@localhost
+  - name: OVERWRITE_SETTING_Show_Setup_Wizard
+    value: completed
+  - name: OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_Enabled
+    value: "no"

@@ -1,0 +1,28 @@
+opentelemetry-collector:
+  presets:
+    hostMetrics:
+      enabled: false
+  
+  config:
+    exporters:
+      otlp/tempo:
+        endpoint: tempo.o11y.svc.cluster.local:4317
+        tls:
+          insecure: true
+      otlphttp/prometheus:
+        endpoint: http://prometheus.o11y.svc.cluster.local:9090/api/v1/otlp
+        tls:
+          insecure: true
+      otlphttp/loki:
+        endpoint: http://loki.o11y.svc.cluster.local:3100/otlp
+        tls:
+          insecure: true
+
+    service:
+      pipelines:
+        traces:
+          exporters: [otlp/tempo, debug, spanmetrics]
+        metrics:
+          exporters: [otlphttp/prometheus, debug]
+        logs:
+          exporters: [otlphttp/loki, debug]

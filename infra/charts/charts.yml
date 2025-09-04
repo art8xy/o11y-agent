@@ -1,0 +1,80 @@
+metallb:
+  chart: metallb
+  version: 0.15.3
+  repository: https://metallb.github.io/metallb
+
+traefik:
+  chart: traefik
+  version: 39.0.0
+  repository: https://traefik.github.io/charts
+
+cnpg:
+  chart: cloudnative-pg
+  version: 0.28.0
+  repository: https://cloudnative-pg.github.io/charts
+
+otel-demo:
+  chart: opentelemetry-demo
+  version: 0.40.6
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+
+postgres:
+  chart: cluster
+  version: 0.6.0
+  repository: https://cloudnative-pg.github.io/charts
+
+rocket:
+  chart: rocketchat
+  version: 6.32.1
+  repository: https://rocketchat.github.io/helm-charts
+
+prometheus:
+  chart: kube-prometheus-stack
+  release: prometheus
+  version: 82.17.1
+  repository: https://prometheus-community.github.io/helm-charts
+
+metrics-server:
+  chart: metrics-server
+  version: 3.13.0
+  repository: https://kubernetes-sigs.github.io/metrics-server
+
+alloy:
+  chart: alloy
+  version: 1.7.0
+  repository: https://grafana.github.io/helm-charts
+
+loki:
+  chart: loki
+  version: 6.55.0
+  repository: https://grafana.github.io/helm-charts
+
+tempo:
+  chart: tempo
+  version: 1.24.4
+  repository: https://grafana.github.io/helm-charts
+
+grafana:
+  chart: grafana
+  version: 10.5.15
+  repository: https://grafana.github.io/helm-charts
+
+grafana-mcp:
+  chart: grafana-mcp
+  version: 0.3.1
+  repository: https://grafana.github.io/helm-charts
+
+valkey:
+  chart: valkey
+  version: 0.9.3
+  repository: https://valkey.io/valkey-helm
+
+minio:
+  chart: minio
+  version: 5.4.0
+  repository: https://charts.min.io
+
+n8n:
+  chart: n8n
+  version: 2.0.1
+  repository: oci://8gears.container-registry.com/library/n8n

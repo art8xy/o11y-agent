@@ -1,0 +1,35 @@
+fullnameOverride: n8n
+
+image:
+  tag: 2.20.6
+
+main:
+  service:
+    port: 5678
+
+  persistence:
+    enabled: true
+    size: 5Gi
+
+  livenessProbe:
+    initialDelaySeconds: 60
+
+  readinessProbe:
+    initialDelaySeconds: 60
+
+  config:
+    webhook_url: https://n8n.o11y.local
+
+    n8n:
+      port: 5678
+      proxy_hops: 1
+      encryption_key: supersecretkey
+
+    db:
+      type: postgresdb
+      postgresdb:
+        host: n8n-postgres-rw.agent.svc.cluster.local
+        port: 5432
+        database: n8n
+        user: n8n
+        password: n8n123

@@ -1,0 +1,9 @@
+fullnameOverride: valkey
+
+dataStorage:
+  enabled: true
+  requestedSize: 5Gi
+
+metrics:
+  serviceMonitor:
+    enabled: true
